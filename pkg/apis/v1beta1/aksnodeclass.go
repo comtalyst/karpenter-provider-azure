@@ -73,6 +73,7 @@ type AKSNodeClassSpec struct {
 	// Wherever possible, the types and names should reflect the upstream kubelet types.
 	// +kubebuilder:validation:XValidation:message="imageGCHighThresholdPercent must be greater than imageGCLowThresholdPercent",rule="has(self.imageGCHighThresholdPercent) && has(self.imageGCLowThresholdPercent) ?  self.imageGCHighThresholdPercent > self.imageGCLowThresholdPercent  : true"
 	// +kubebuilder:validation:XValidation:message="cpuCFSQuotaPeriod must be between 1ms and 1s",rule="has(self.cpuCFSQuotaPeriod) ? duration(self.cpuCFSQuotaPeriod) >= duration('1ms') && duration(self.cpuCFSQuotaPeriod) <= duration('1s') : true"
+	// +kubebuilder:validation:XValidation:message="allowedUnsafeSysctls items must match kernel.shm*, kernel.msg*, kernel.sem, fs.mqueue.*, or net.*",rule="!has(self.allowedUnsafeSysctls) || self.allowedUnsafeSysctls.all(s, s.matches('^kernel\\\\.shm.+$') || s.matches('^kernel\\\\.msg.+$') || s.matches('^kernel\\\\.sem$') || s.matches('^fs\\\\.mqueue\\\\..+$') || s.matches('^net\\\\..+$'))"
 	// +optional
 	Kubelet *KubeletConfiguration `json:"kubelet,omitempty"`
 	// maxPods is an override for the maximum number of pods that can run on a worker node instance.
@@ -340,9 +341,8 @@ type KubeletConfiguration struct {
 	// allowedUnsafeSysctls is a list of unsafe sysctls or sysctl patterns (ending in `*`)
 	// that are allowed to be set on pods running on nodes provisioned with this configuration.
 	// Unsafe sysctl groups are `kernel.shm*`, `kernel.msg*`, `kernel.sem`, `fs.mqueue.*`,
-	// and `net.*`. For example: "`kernel.msg*,net.ipv4.route.min_pmtu`"
+	// and `net.*`. For example: ["kernel.msgmax", "net.ipv4.route.min_pmtu"]
 	// Default: []
-	// +kubebuilder:validation:items:Pattern=`^(kernel\.(shm|msg|sem)|fs\.mqueue|net)\..+$`
 	// +optional
 	//nolint:kubeapilinter // ssatags: adding listType marker would be a breaking change
 	AllowedUnsafeSysctls []string `json:"allowedUnsafeSysctls,omitempty"`
