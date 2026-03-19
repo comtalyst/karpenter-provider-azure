@@ -422,6 +422,13 @@ spec:
                         minimum: 0
                         type: integer
                     type: object
+                    x-kubernetes-validations:
+                    - message: netCoreRmemDefault must be <= netCoreRmemMax
+                      rule: 'has(self.netCoreRmemDefault) && has(self.netCoreRmemMax)
+                        ? self.netCoreRmemDefault <= self.netCoreRmemMax : true'
+                    - message: netCoreWmemDefault must be <= netCoreWmemMax
+                      rule: 'has(self.netCoreWmemDefault) && has(self.netCoreWmemMax)
+                        ? self.netCoreWmemDefault <= self.netCoreWmemMax : true'
                   transparentHugePageDefrag:
                     description: transparentHugePageDefrag sets the kernel's transparent_hugepage/defrag
                       behavior.
@@ -1241,6 +1248,13 @@ spec:
                         minimum: 0
                         type: integer
                     type: object
+                    x-kubernetes-validations:
+                    - message: netCoreRmemDefault must be <= netCoreRmemMax
+                      rule: 'has(self.netCoreRmemDefault) && has(self.netCoreRmemMax)
+                        ? self.netCoreRmemDefault <= self.netCoreRmemMax : true'
+                    - message: netCoreWmemDefault must be <= netCoreWmemMax
+                      rule: 'has(self.netCoreWmemDefault) && has(self.netCoreWmemMax)
+                        ? self.netCoreWmemDefault <= self.netCoreWmemMax : true'
                   transparentHugePageDefrag:
                     description: transparentHugePageDefrag sets the kernel's transparent_hugepage/defrag
                       behavior.
