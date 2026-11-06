@@ -101,6 +101,12 @@ func (c *NetworkInterface) Reconcile(ctx context.Context) (reconciler.Result, er
 		// Should be safe to remove once https://github.com/kubernetes-sigs/cloud-provider-azure/pull/11267 is rolled out.
 		// Machine NICs use their tag to name the owning NodeClaim.
 		if isMachineNIC {
+			// NodeClass tags are also applied to VM NICs and can collide with the Machine owner tag.
+			// Preserve NICs that the VM ownership checks already proved are still in use.
+			if unremovableInterfaces.Has(nicName) {
+				return
+			}
+
 			// AKS machine instance NIC garbage collection here will delete NIC if no NodeClaim of the name tagged on NIC object exists.
 			// That relies on the assumption that we tag AKS machine instance accordingly, and AKS Machine API correctly propagates it to underlying NIC.
 			if !nodeClaimNames.Has(lo.FromPtr(machineNodeClaimName)) {
