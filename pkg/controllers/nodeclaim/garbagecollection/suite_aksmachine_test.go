@@ -556,6 +556,28 @@ var _ = Describe("NetworkInterface Garbage Collection", func() {
 				Expect(azureEnv.NetworkInterfacesAPI.NetworkInterfacesDeleteBehavior.CalledWithInput.Len()).To(BeZero())
 			})
 
+			It("should preserve a VM NIC owned by a live NodeClaim when a user tag collides with the AKS Machine owner tag", func() {
+				testCtx := options.ToContext(ctx, test.Options(test.OptionsFields{
+					ProvisionMode: lo.ToPtr(consts.ProvisionModeAKSMachineAPI),
+				}))
+				nodeClaim := coretest.NodeClaim()
+				ExpectApplied(testCtx, env.Client, nodeClaim)
+				tags := test.ManagedTags(nodePool.Name)
+				tags[launchtemplate.KarpenterAKSMachineNodeClaimTagKey] = lo.ToPtr("user-supplied-value")
+				nic := test.Interface(test.InterfaceOptions{
+					Name:         instance.GenerateResourceName(nodeClaim.Name),
+					NodepoolName: nodePool.Name,
+					Tags:         tags,
+				})
+				azureEnv.NetworkInterfacesAPI.NetworkInterfaces.Store(lo.FromPtr(nic.ID), *nic)
+
+				ExpectSingletonReconciled(testCtx, networkInterfaceGCController)
+
+				_, exists := azureEnv.NetworkInterfacesAPI.NetworkInterfaces.Load(lo.FromPtr(nic.ID))
+				Expect(exists).To(BeTrue())
+				Expect(azureEnv.NetworkInterfacesAPI.NetworkInterfacesDeleteBehavior.CalledWithInput.Len()).To(BeZero())
+			})
+
 			DescribeTable("should preserve an AKS Machine NIC while its tagged NodeClaim exists", func(provisionMode string, manageExisting bool) {
 				testCtx := options.ToContext(ctx, test.Options(test.OptionsFields{
 					ProvisionMode:             lo.ToPtr(provisionMode),
