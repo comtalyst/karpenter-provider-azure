@@ -1,0 +1,27 @@
+# Go toolchain
+coverage.out
+coverage.html
+*.test
+*.cpuprofile
+*.heapprofile
+go.work
+go.work.sum
+*.out
+
+# Environment
+.idea
+# .vscode - do check in to share settings
+.DS_Store
+.claude/settings.local.json
+
+# Go Benchmarking
+*.cpuprofile
+*.heapprofile
+
+# Temp perf logs
+/logs
+# Project Specific
+*.csv
+
+# generated deployment config
+karpenter-values.yaml
