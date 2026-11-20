@@ -1,0 +1,47 @@
+name: InstallKarpenter
+description: 'Installs Karpenter on the aks cluster'
+inputs:
+  subscription_id:
+    description: "ID of the subscription containing the cluster to install Karpenter into"
+    required: true
+  resource_group:
+    description: "Name of the resource group containing the cluster to install Karpenter into"
+    required: true
+  cluster_name:
+    description: "Name of the cluster to install Karpenter into."
+    required: true
+  acr_name:
+    description: "Name of the acr holding the Karpenter image"
+    required: true
+  git_ref:
+    description: "The git commit, tag, or branch to check out"
+    required: false
+  location:
+    description: "the azure location to run the e2e test in"
+    default: "eastus"
+  provision_mode:
+    description: "the Karpenter provisioning mode to run the e2e test in"
+    default: "aksscriptless"
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    with:
+      ref: ${{ inputs.git_ref }}
+  - name: Build, publish, configure, and install Karpenter
+    shell: bash
+    env:
+      AZURE_RESOURCE_GROUP: ${{ inputs.resource_group }}
+      AZURE_CLUSTER_NAME: ${{ inputs.cluster_name }}
+      AZURE_LOCATION: ${{ inputs.location }}
+      PROVISION_MODE: ${{ inputs.provision_mode }}
+      AZURE_ACR_NAME: ${{ inputs.acr_name }}
+      # Redirect Go temp/cache to /mnt/ (Azure temporary disk) which has more disk
+      # space than the OS disk. 1ES pool VMs can run out of disk on / during large builds.
+      GOTMPDIR: /mnt/go-tmp
+      GOCACHE: /mnt/go-cache
+      KOCACHE: /mnt/ko-cache
+    run: |
+      sudo mkdir -p "$GOTMPDIR" "$GOCACHE" "$KOCACHE"
+      sudo chown "$(id -u):$(id -g)" "$GOTMPDIR" "$GOCACHE" "$KOCACHE"
+      make ci-install
