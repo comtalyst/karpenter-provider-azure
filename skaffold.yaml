@@ -1,0 +1,44 @@
+apiVersion: skaffold/v3
+kind: Config
+build:
+  artifacts:
+    - image: controller
+      ko:
+        main: github.com/Azure/karpenter-provider-azure/cmd/controller
+        dependencies:
+          paths:
+            - '**/*.go'
+            - '**/*.gtpl'
+            #flags: ['-tags', 'ccp']
+manifests:
+  helm:
+    releases:
+      - name: karpenter
+        chartPath: charts/karpenter
+        skipBuildDependencies: true
+        namespace: kube-system
+        createNamespace: true
+        setValueTemplates:
+          controller.image.repository: "{{.IMAGE_REPO_controller}}"
+          controller.image.tag: "{{.IMAGE_TAG_controller}}"
+          controller.image.digest: "{{.IMAGE_DIGEST_controller}}"
+        valuesFiles:
+          - karpenter-values.yaml
+        overrides:
+          controller:
+            resources:
+              requests:
+                cpu: 200m
+              limits:
+                cpu: 500m
+          podAnnotations:
+            profiles.grafana.com/memory.scrape: "true"
+            profiles.grafana.com/memory.port_name: "http-metrics"
+            profiles.grafana.com/cpu.scrape: "true"
+            profiles.grafana.com/cpu.port_name: "http-metrics"
+            profiles.grafana.com/goroutine.scrape: "true"
+            profiles.grafana.com/goroutine.port_name: "http-metrics"
+            profiles.grafana.com/service_repository: "github.com/Azure/karpenter-provider-azure"
+            profiles.grafana.com/service_git_ref: "v1.4.0"
+deploy:
+  helm: {}
