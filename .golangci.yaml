@@ -1,0 +1,114 @@
+version: "2"
+run:
+  tests: true
+  allow-parallel-runners: true
+linters:
+  enable:
+    - asciicheck
+    - bidichk
+    - copyloopvar
+    - errorlint
+    - gocyclo
+    - goheader
+    - gosec
+    - kubeapilinter
+    - misspell
+    - nilerr
+    - nolintlint
+    - revive
+    - staticcheck
+    - tparallel
+    - unconvert
+    - unparam
+    - whitespace
+  disable:
+    - prealloc
+  settings:
+    dupl:
+      threshold: 100
+    gocyclo:
+      min-complexity: 11
+    goheader:
+      template: |-
+        Portions Copyright (c) Microsoft Corporation.
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    misspell:
+      locale: US
+      ignore-rules:
+        - karpenter
+    revive:
+      rules:
+        - name: dot-imports
+          disabled: true
+    staticcheck:
+      dot-import-whitelist:
+        - github.com/onsi/ginkgo/v2
+        - github.com/onsi/gomega
+    custom:
+      kubeapilinter:
+        type: module
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices.
+        settings:
+          linters: {}
+          lintersConfig: {}
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - goheader
+        path: zz_(.+)\.go
+      - linters:
+          - goheader
+        source: ^//go:build
+      - path: (.+)\.go$
+        text: declaration of "(err|ctx)" shadows declaration at
+      - linters:
+          - kubeapilinter
+        path-except: pkg/apis/*
+    paths:
+      - tools
+      - hack
+      - charts
+      - designs
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  fix: true
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/azure/karpenter-provider-azure
+  exclusions:
+    generated: lax
+    paths:
+      - tools
+      - hack
+      - charts
+      - designs
+      - third_party$
+      - builtin$
+      - examples$
