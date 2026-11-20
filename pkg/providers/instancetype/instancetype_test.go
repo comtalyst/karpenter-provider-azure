@@ -57,6 +57,21 @@ func TestKubeReservedResourcesHardeningParity(t *testing.T) {
 	}
 }
 
+func TestKubeReservedResourcesOverrides(t *testing.T) {
+	g := NewWithT(t)
+	resources := KubeReservedResources(4, 8192, 110, true, map[string]string{
+		"cpu":    "250m",
+		"memory": "512Mi",
+		"pid":    "2000",
+	})
+
+	cpu := resources[corev1.ResourceCPU]
+	memory := resources[corev1.ResourceMemory]
+	g.Expect(cpu.String()).To(Equal("250m"))
+	g.Expect(memory.String()).To(Equal("512Mi"))
+	g.Expect(resources).ToNot(HaveKey(corev1.ResourceName("pid")))
+}
+
 // These cases mirror the hardened system-reserved calculation in the AKS RP.
 func TestSystemReservedResourcesHardeningParity(t *testing.T) {
 	tests := []struct {
@@ -145,6 +160,21 @@ func TestEvictionThreshold(t *testing.T) {
 			threshold := EvictionThreshold(test.memoryMiB, test.enableNodeHardening)[corev1.ResourceMemory]
 			g.Expect(threshold.String()).To(Equal(test.want))
 		})
+	}
+}
+
+func TestEvictionThresholdOverrides(t *testing.T) {
+	g := NewWithT(t)
+
+	absolute := EvictionThreshold(8192, true, map[string]string{MemoryAvailable: "333Mi"})[corev1.ResourceMemory]
+	g.Expect(absolute.String()).To(Equal("333Mi"))
+
+	percentage := EvictionThreshold(8192, true, map[string]string{MemoryAvailable: "5%"})[corev1.ResourceMemory]
+	g.Expect(percentage.Value()).To(Equal(410 * bytesPerMiB))
+
+	for _, value := range []string{"-1%", "101%", "NaN%"} {
+		threshold := EvictionThreshold(8192, true, map[string]string{MemoryAvailable: value})[corev1.ResourceMemory]
+		g.Expect(threshold.String()).To(Equal("250Mi"))
 	}
 }
 
