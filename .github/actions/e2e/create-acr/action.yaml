@@ -1,0 +1,37 @@
+name: CreateACR
+description: 'Creates ACR'
+inputs:
+  subscription_id:
+    description: "Subscription ID"
+    required: true
+  resource_group:
+    description: "Name of the resource group to create the cluster within"
+    required: true
+  acr_name:
+    description: "Name of the acr holding the karpenter image"
+    required: true
+  git_ref:
+    description: "The git commit, tag, or branch to check out"
+    required: false
+  location:
+    description: "The azure location to run the e2e test in"
+    default: "eastus"
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    with:
+      ref: ${{ inputs.git_ref }}
+  - name: create ACR
+    shell: bash
+    env:
+      AZURE_RESOURCE_GROUP: ${{ inputs.resource_group }}
+      AZURE_ACR_NAME: ${{ inputs.acr_name }}
+      AZURE_LOCATION: ${{ inputs.location }}
+    run: make az-mkacr
+  - name: import needed images
+    shell: bash
+    env:
+      AZURE_ACR_NAME: ${{ inputs.acr_name }}
+    run: |
+      make az-acrimport
