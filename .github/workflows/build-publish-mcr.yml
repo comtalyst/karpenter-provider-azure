@@ -1,0 +1,43 @@
+# This Github action builds and publishes image to Azure Container Registry (ACR),
+# from where it is automatically propagated to Microsoft Container Registry (MCR).
+
+name: Build and publish to MCR
+on:
+  push:
+    # Only release on supported semantic version tagging e.g. v0.0.1-rc.0
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-test.[a-z0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-images:
+    permissions:
+      contents: read
+      id-token: write # This is required for requesting the JWT
+    runs-on:
+      labels: [self-hosted, "1ES.Pool=${{ vars.RELEASE_1ES_POOL }}"]
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+      with:
+        egress-policy: audit
+
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        fetch-depth: 0
+
+    - uses: ./.github/actions/install-deps
+
+    - name: Build and publish image
+      env:
+        RELEASE_ACR: ${{ secrets.AZURE_REGISTRY }}
+      run: |
+        az login --identity
+        ko version
+        ./hack/release/release.sh
