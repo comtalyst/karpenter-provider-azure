@@ -446,6 +446,31 @@ type KubeletConfiguration struct {
 	// Must be set to false to allow linuxOSConfig.swapFileSize to take effect.
 	// +optional
 	FailSwapOn *bool `json:"failSwapOn,omitempty"`
+	// KubeReserved maps resource names (`cpu`, `memory`, `pid`) to reserved values and overrides Karpenter's computed defaults per key.
+	// It matches AKS `kubeletConfig.cpuReserved` and `memoryReserved`.
+	// +optional
+	//nolint:kubeapilinter // ssatags: server-side apply is not used for kubelet reservation maps
+	KubeReserved map[string]string `json:"kubeReserved,omitempty"`
+	// EvictionHard maps eviction signals (for example, `memory.available`) to quantities and overrides Karpenter's defaults per key.
+	// It matches AKS `kubeletConfig.hardEvictionThreshold`.
+	// +optional
+	//nolint:kubeapilinter // ssatags: server-side apply is not used for kubelet eviction maps
+	EvictionHard map[string]string `json:"evictionHard,omitempty"`
+	// EvictionSoft maps eviction signals to quantities and overrides Karpenter's soft eviction thresholds per key.
+	// It matches AKS `kubeletConfig.softEvictionThreshold`.
+	// +optional
+	//nolint:kubeapilinter // ssatags: server-side apply is not used for kubelet eviction maps
+	EvictionSoft map[string]string `json:"evictionSoft,omitempty"`
+	// EvictionSoftGracePeriod maps eviction signals to grace periods and overrides Karpenter's defaults per key.
+	// It matches AKS `kubeletConfig.softEvictionGracePeriod`.
+	// +optional
+	//nolint:kubeapilinter // ssatags,nodurations: metav1.Duration matches upstream kubelet types
+	EvictionSoftGracePeriod map[string]metav1.Duration `json:"evictionSoftGracePeriod,omitempty"`
+	// evictionMaxPodGracePeriod is the maximum grace period (in seconds) kubelet honors when
+	// terminating pods for soft eviction. Matches AKS `kubeletConfig.evictionMaxPodGracePeriodInSeconds`.
+	// +kubebuilder:validation:Minimum:=0
+	// +optional
+	EvictionMaxPodGracePeriod *int32 `json:"evictionMaxPodGracePeriod,omitempty"`
 }
 
 // +kubebuilder:validation:Enum:={always,defer,"defer+madvise",madvise,never}
