@@ -1,0 +1,48 @@
+diff --git cmd/dlv/cmds/commands.go cmd/dlv/cmds/commands.go
+index 374b5451..ad1c6b69 100644
+--- cmd/dlv/cmds/commands.go
++++ cmd/dlv/cmds/commands.go
+@@ -61,6 +61,8 @@ var (
+ 	// checkLocalConnUser is true if the debugger should check that local
+ 	// connections come from the same user that started the headless server
+ 	checkLocalConnUser bool
++	// checkLocalConnUserDefault sets default for --only-same-user
++	checkLocalConnUserDefault = "true"
+ 	// tty is used to provide an alternate TTY for the program you wish to debug.
+ 	tty string
+ 	// disableASLR is used to disable ASLR
+@@ -78,6 +80,8 @@ var (
+ 	// used to compile the executable and refuse to work on incompatible
+ 	// versions.
+ 	checkGoVersion bool
++	// checkGoVersionDefault sets default for --check-go-version
++	checkGoVersionDefault = "true"
+ 
+ 	// rootCommand is the root of the command tree.
+ 	rootCommand *cobra.Command
+@@ -158,8 +162,8 @@ func New(docCall bool) *cobra.Command {
+ 	must(rootCommand.RegisterFlagCompletionFunc("build-flags", cobra.NoFileCompletions))
+ 	rootCommand.PersistentFlags().StringVar(&workingDir, "wd", "", "Working directory for running the program.")
+ 	must(rootCommand.MarkPersistentFlagDirname("wd"))
+-	rootCommand.PersistentFlags().BoolVarP(&checkGoVersion, "check-go-version", "", true, "Exits if the version of Go in use is not compatible (too old or too new) with the version of Delve.")
+-	rootCommand.PersistentFlags().BoolVarP(&checkLocalConnUser, "only-same-user", "", true, "Only connections from the same user that started this instance of Delve are allowed to connect.")
++	rootCommand.PersistentFlags().BoolVarP(&checkGoVersion, "check-go-version", "", parseBool(checkGoVersionDefault), "Exits if the version of Go in use is not compatible (too old or too new) with the version of Delve.")
++	rootCommand.PersistentFlags().BoolVarP(&checkLocalConnUser, "only-same-user", "", parseBool(checkLocalConnUserDefault), "Only connections from the same user that started this instance of Delve are allowed to connect.")
+ 	rootCommand.PersistentFlags().StringVar(&backend, "backend", "default", `Backend selection (see 'dlv help backend').`)
+ 	must(rootCommand.RegisterFlagCompletionFunc("backend", cobra.FixedCompletions([]string{"default", "native", "lldb", "rr"}, cobra.ShellCompDirectiveNoFileComp)))
+ 	rootCommand.PersistentFlags().StringArrayVarP(&redirects, "redirect", "r", []string{}, "Specifies redirect rules for target process (see 'dlv help redirect')")
+@@ -1249,3 +1253,14 @@ func must(err error) {
+ 		log.Fatal(err)
+ 	}
+ }
++
++// parseBool parses a boolean value represented by a string, and panics if there is an error.
++// It is intended for boolean build-time constants that are set with 'go build -ldflags=-X xxx=bool'
++// and should only be a valid value.
++func parseBool(value string) bool {
++	b, err := strconv.ParseBool(value)
++	if err != nil {
++		panic(err)
++	}
++	return b
++}
