@@ -1,0 +1,68 @@
+replicas: 1 # for better debugging experience
+controller:
+  env:
+    - name: DISABLE_LEADER_ELECTION # disable leader election for better debugging / troubleshooting experience
+      value: "true"
+    # disable HTTP/2 to reduce ARM throttling on large-scale tests;
+    # with this in place write (and read) QPS can be increased too
+    #- name: GODEBUG
+    #  value: http2client=0
+    # options
+    - name: CLUSTER_NAME
+      value: ${CLUSTER_NAME}
+    - name: CLUSTER_ENDPOINT
+      value: ${CLUSTER_ENDPOINT}
+    - name: KUBELET_BOOTSTRAP_TOKEN
+      value: ${BOOTSTRAP_TOKEN}
+    - name: SSH_PUBLIC_KEY
+      value: "${SSH_PUBLIC_KEY}"
+    - name: NETWORK_PLUGIN
+      value: ${NETWORK_PLUGIN}
+    - name: NETWORK_PLUGIN_MODE
+      value: ${NETWORK_PLUGIN_MODE}
+    - name: NETWORK_POLICY
+      value: ${NETWORK_POLICY}
+    - name: VNET_SUBNET_ID
+      value: ${VNET_SUBNET_ID}
+    - name: VNET_GUID
+      value: ${VNET_GUID}
+    - name: NODE_IDENTITIES
+      value: ${NODE_IDENTITIES}
+
+    # Azure client settings
+    - name: AZURE_SUBSCRIPTION_ID
+      value: ${AZURE_SUBSCRIPTION_ID}
+    - name: LOCATION
+      value: ${AZURE_LOCATION}
+    - name: KUBELET_IDENTITY_CLIENT_ID
+      value: ${KUBELET_IDENTITY_CLIENT_ID}
+    - name: AZURE_NODE_RESOURCE_GROUP
+      value: ${AZURE_RESOURCE_GROUP_MC}
+    - name: ENABLE_AZURE_SDK_LOGGING
+      value: ${ENABLE_AZURE_SDK_LOGGING:-false}
+
+    # managed karpenter settings
+    - name: USE_SIG
+      value: "${USE_SIG}"
+    - name: SIG_ACCESS_TOKEN_SERVER_URL
+      value: ""
+    - name: SIG_ACCESS_TOKEN_SCOPE
+      value: ""
+    - name: SIG_SUBSCRIPTION_ID
+      value: "${AZURE_SIG_SUBSCRIPTION_ID}"
+    - name: PROVISION_MODE
+      value: "${PROVISION_MODE:-aksscriptless}"
+    - name: AKS_MACHINES_POOL_NAME
+      value: "${AKS_MACHINES_POOL_NAME}"
+    - name: ARM_RESOURCE_GROUP
+      value: "${AZURE_RESOURCE_GROUP}"
+serviceAccount:
+  name: ${KARPENTER_SERVICE_ACCOUNT_NAME}
+  annotations:
+    azure.workload.identity/client-id: ${KARPENTER_USER_ASSIGNED_CLIENT_ID}
+podLabels:
+  azure.workload.identity/use: "true"
+logLevel: ${LOG_LEVEL}
+settings:
+  featureGates:
+    staticCapacity: true
