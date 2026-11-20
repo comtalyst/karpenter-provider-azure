@@ -18,10 +18,12 @@ package instance
 
 import (
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v9"
 	"github.com/samber/lo"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	karpv1 "sigs.k8s.io/karpenter/pkg/apis/v1"
 	corecloudprovider "sigs.k8s.io/karpenter/pkg/cloudprovider"
 	"sigs.k8s.io/karpenter/pkg/scheduling"
@@ -608,15 +610,17 @@ var _ = Describe("AKSMachineInstance Helper Functions", func() {
 
 	Context("configureKubeletConfig", func() {
 		It("should return nil when nodeClass is nil", func() {
-			config := configureKubeletConfig(nil)
+			config, err := configureKubeletConfig(nil)
 
+			Expect(err).ToNot(HaveOccurred())
 			Expect(config).To(BeNil())
 		})
 
 		It("should return nil when kubelet spec is nil", func() {
 			nodeClass.Spec.Kubelet = nil
-			config := configureKubeletConfig(nodeClass)
+			config, err := configureKubeletConfig(nodeClass)
 
+			Expect(err).ToNot(HaveOccurred())
 			Expect(config).To(BeNil())
 		})
 
@@ -633,8 +637,9 @@ var _ = Describe("AKSMachineInstance Helper Functions", func() {
 				PodPidsLimit:                lo.ToPtr(int64(2048)),
 			}
 
-			config := configureKubeletConfig(nodeClass)
+			config, err := configureKubeletConfig(nodeClass)
 
+			Expect(err).ToNot(HaveOccurred())
 			Expect(config).ToNot(BeNil())
 			Expect(*config.CPUManagerPolicy).To(Equal("static"))
 			Expect(*config.CPUCfsQuota).To(BeTrue())
@@ -658,14 +663,47 @@ var _ = Describe("AKSMachineInstance Helper Functions", func() {
 				PodPidsLimit:         nil,             // Nil should stay nil
 			}
 
-			config := configureKubeletConfig(nodeClass)
+			config, err := configureKubeletConfig(nodeClass)
 
+			Expect(err).ToNot(HaveOccurred())
 			Expect(config.CPUManagerPolicy).To(BeNil())
 			Expect(*config.CPUCfsQuota).To(BeFalse())
 			Expect(config.AllowedUnsafeSysctls).To(BeNil())
 			Expect(config.ContainerLogMaxSizeMB).To(BeNil())
 			Expect(config.ContainerLogMaxFiles).To(BeNil())
 			Expect(config.PodMaxPids).To(BeNil())
+		})
+
+		It("should configure supported reservation and hard eviction overrides", func() {
+			nodeClass.Spec.Kubelet = &v1beta1.KubeletConfiguration{
+				KubeReserved: map[string]string{"cpu": "250m", "memory": "512Mi"},
+				EvictionHard: map[string]string{
+					"memory.available":  "333Mi",
+					"nodefs.available":  "12%",
+					"nodefs.inodesFree": "7%",
+				},
+			}
+
+			config, err := configureKubeletConfig(nodeClass)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(*config.KubeReserved.CPUMillicores).To(Equal(int32(250)))
+			Expect(*config.KubeReserved.MemoryMB).To(Equal(int32(512)))
+			Expect(*config.HardEvictionThreshold.MemoryAvailable).To(Equal("333Mi"))
+			Expect(*config.HardEvictionThreshold.NodeFsAvailable).To(Equal("12%"))
+			Expect(*config.HardEvictionThreshold.NodeFsInodesFree).To(Equal("7%"))
+		})
+
+		It("should reject overrides unsupported by the AKS Machine API", func() {
+			nodeClass.Spec.Kubelet = &v1beta1.KubeletConfiguration{
+				EvictionSoft:              map[string]string{"memory.available": "444Mi"},
+				EvictionSoftGracePeriod:   map[string]metav1.Duration{"memory.available": {Duration: time.Minute}},
+				EvictionMaxPodGracePeriod: lo.ToPtr(int32(120)),
+			}
+
+			_, err := configureKubeletConfig(nodeClass)
+
+			Expect(err).To(MatchError("kubelet overrides evictionSoft, evictionSoftGracePeriod, evictionMaxPodGracePeriod are not supported by the AKS Machine API; supported override fields are kubeReserved and evictionHard"))
 		})
 	})
 
