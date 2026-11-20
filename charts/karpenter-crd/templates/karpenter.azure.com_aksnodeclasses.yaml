@@ -1080,6 +1080,34 @@ spec:
                     - none
                     - static
                     type: string
+                  evictionHard:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      EvictionHard maps eviction signals (for example, `memory.available`) to quantities and overrides Karpenter's defaults per key.
+                      It matches AKS `kubeletConfig.hardEvictionThreshold`.
+                    type: object
+                  evictionMaxPodGracePeriod:
+                    description: |-
+                      evictionMaxPodGracePeriod is the maximum grace period (in seconds) kubelet honors when
+                      terminating pods for soft eviction. Matches AKS `kubeletConfig.evictionMaxPodGracePeriodInSeconds`.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  evictionSoft:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      EvictionSoft maps eviction signals to quantities and overrides Karpenter's soft eviction thresholds per key.
+                      It matches AKS `kubeletConfig.softEvictionThreshold`.
+                    type: object
+                  evictionSoftGracePeriod:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      EvictionSoftGracePeriod maps eviction signals to grace periods and overrides Karpenter's defaults per key.
+                      It matches AKS `kubeletConfig.softEvictionGracePeriod`.
+                    type: object
                   failSwapOn:
                     description: |-
                       failSwapOn tells the kubelet to fail to start if swap is enabled on the node.
@@ -1108,6 +1136,13 @@ spec:
                     maximum: 100
                     minimum: 0
                     type: integer
+                  kubeReserved:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      KubeReserved maps resource names (`cpu`, `memory`, `pid`) to reserved values and overrides Karpenter's computed defaults per key.
+                      It matches AKS `kubeletConfig.cpuReserved` and `memoryReserved`.
+                    type: object
                   podPidsLimit:
                     description: |-
                       podPidsLimit is the maximum number of PIDs in any pod.
